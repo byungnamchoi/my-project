@@ -1,6 +1,16 @@
 class Tetris {
   constructor(ctx) {
-    this.ctx = canvas.getContext('2d');
+    this.status = false;
+
+    this.cube;
+    this.cubeSize = 25;
+    this.cubeOffsetTop = 50;
+    this.cubeOffsetLeft = 160;
+
+    this.currentShapeNumber = 1;
+    this.currentShapeX = 3;
+    this.currentShapeY = 0;
+
     this.canvasOffsetTop = canvas.clientTop
     this.canvasOffsetRight = canvas.clientLeft + canvas.width
     this.canvasOffsetBottom = canvas.clientTop + canvas.height
@@ -14,77 +24,75 @@ class Tetris {
       {name: 'S', color: 'gray'},
       {name: 'Z', color: 'purple'}
     ];
-    this.nowShape;
-    this.beginX = 30;
-    this.beginY = 50;
-    this.speed = 30;
+    this.anim;
 
     window.onkeydown = (e) => {
       if (e.which == 37) { // left
-        this.nowShape = this.drawShape(this.nowShape = this.x - this.speed, this.nowShape = this.y);
+        console.log('left');
       } else if (e.which == 38) { // up
-        this.nowShape = this.drawShape(this.nowShape = this.x, this.nowShape = this.y - this.speed);
+        console.log('rotate');
       } else if (e.which == 39) { // right
-        this.nowShape = this.drawShape(this.nowShape = this.x + this.speed, this.nowShape = this.y);
+        console.log('right');
       } else if (e.which == 40) { // bottom
-        this.nowShape = this.drawShape(this.nowShape = this.x, this.nowShape = this.y + this.speed);
+        console.log('bottom');
       }
     }
 
-    this.drawNewShape(2);
+    this.init();
     this.draw();
   }
 
-  /*
-    로직
-    - canvas 테두리 그리기.
-    - canvas shape 타입 및 위치 세팅하여 그리기.
-    - 키보드 방향키로 shape 이동 시키기.
-    - 아래 방향으로 shape 5초 간격으로 이동 시키기.
-    - shape 가 canvas 좌/우, 하단 도달했을 경우 체크하여 처리하기.
-  */
-  drawNewShape(shapesIndex) {
-    this.nowShape = this.shape(shapesIndex, this.beginX, this.beginY);
-    this.nowShape = this.drawShape(this.beginX, this.beginY);
-    return this.nowShape;
+  init() {
+    if (this.status == false) {
+      this.ctx = canvas.getContext('2d');
+      this.grid();
+      this.cube[5][5] = 1;
+      this.status = true;
+    }
   }
 
-  shape(shapesIndex, x, y) {
-    console.log(shapesIndex, x, y);
-    // 모양 타입
-    this.type = this.shapes[shapesIndex];
-    // 위치
-    this.x = x;
-    this.y = y;
-    this.ctx.fillStyle = this.type.color;
-
-    // 모양 그리기
-    this.drawShape = (nowX, nowY) => {
-      console.log(nowX, nowY);
-      // 기존 모양 지우기
-      this.ctx.clearRect(this.x, this.y, 50, 50);
-      this.x = nowX;
-      this.y = nowY;
-      // 새로운 위치로 모양 그리기
-      this.ctx.fillRect(nowX, nowY, 50, 50);
-      // this.canvasOffsetTop, this.canvasOffsetRight, this.canvasOffsetBottom, this.canvasOffsetLeft
-      // shape 가 canvas 좌/우에 도달했을 경우
-      if (this.x >= this.canvasOffsetRight - 50) {
-        console.log('right');
-        this.x = this.canvasOffsetRight;
-      } else if (this.x <= this.canvasOffsetLeft) {
-        console.log('left');
-        this.x = this.canvasOffsetLeft;
-      }
+  grid() {
+    this.cube = new Array();
+    this.cube.push(new Array(10));
+    for (let i = 0; i < 20; ++i) {
+      this.cube.push(new Array(10));
+      for (let j = 0; j < 10; ++j) this.cube[i][j] = 0;
+      // console.log(this.cube);
     }
   }
 
   draw() {
     // canvas 테두리
+    if (this.status == false) return;
     this.ctx.strokeStyle = "#000";
     this.ctx.lineWidth = 1;
     this.ctx.strokeRect(0, 0, this.ctx.canvas.width - 1, this.ctx.canvas.height - 1);
     this.ctx.stroke();
+    for (let i = 0; i < 20; ++i) {
+      for (let j = 0; j < 10; ++j) {
+        if (this.cube[i][j] == 0) {
+          this.ctx.fillStyle = '#ccc';
+        } else {
+          this.ctx.fillStyle = '#000';
+        }
+
+        // 떨어지는 shape 체크
+        let shapeCheck = this.cube[this.currentShapeNumber].length;
+
+        for (let k = 0; k < shapeCheck; k += 2) {
+          // console.log(this.currentShapeX, this.cube[this.currentShapeNumber]);
+          if (this.currentShapeY + this.cube[this.currentShapeNumber][k] == i && this.currentShapeX + this.cube[this.currentShapeNumber][k + 1] == j) {
+            this.ctx.fillStyle = 'green';
+          }
+
+          let currentX, currentY;
+          currentX = this.cubeOffsetLeft + j * this.cubeSize;
+          currentY = this.cubeOffsetTop + i * this.cubeSize;
+          // console.log(currentX, currentY);
+          this.ctx.fillRect(currentX, currentY, this.cubeSize - 2, this.cubeSize - 2);
+        }
+      }
+    }
   }
 }
 
@@ -92,7 +100,12 @@ const canvas = document.getElementById('canvas');
 const tetris = new Tetris(canvas);
 
 /*
-  초기화
+  로직
+  - canvas 테두리 그리기.
+  - canvas shape 타입 및 위치 세팅하여 그리기.
+  - 키보드 방향키로 shape 이동 시키기.
+  - 아래 방향으로 shape 5초 간격으로 이동 시키기.
+  - shape 가 canvas 좌/우, 하단 도달했을 경우 체크하여 처리하기.
 
   블럭 7개,
   마지막 단계(last), 최소 속도(min), 최대 속도(max)
